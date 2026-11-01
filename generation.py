@@ -6,9 +6,9 @@
 from __future__ import annotations
 
 from config import (
-    DEEPSEEK_API_KEY,
-    DEEPSEEK_BASE_URL,
-    DEEPSEEK_MODEL,
+    LLM_API_KEY,
+    LLM_BASE_URL,
+    LLM_MODEL,
     LLM_TEMPERATURE,
     MAX_CONTEXT_CHARS,
 )
@@ -49,17 +49,17 @@ def make_client(api_key: str | None = None, base_url: str | None = None):
     """OpenAI 兼容客户端工厂：Key 缺失时给出可操作报错（而不是神秘 401）。"""
     from openai import OpenAI
 
-    key = api_key or DEEPSEEK_API_KEY
+    key = api_key or LLM_API_KEY
     if not key:
         raise RuntimeError(
-            "缺少 DEEPSEEK_API_KEY：请复制 .env.example 为 .env 并填入真实 Key。")
-    return OpenAI(api_key=key, base_url=base_url or DEEPSEEK_BASE_URL)
+            "缺少 LLM Key：请在 .env 填入 DEEPSEEK_API_KEY 或 DASHSCOPE_API_KEY。")
+    return OpenAI(api_key=key, base_url=base_url or LLM_BASE_URL)
 
 
 def answer(client, question: str, chunks: list[dict]) -> str:
     """端到端问答：检索块 -> Prompt -> LLM -> 答案文本。"""
     resp = client.chat.completions.create(
-        model=DEEPSEEK_MODEL,
+        model=LLM_MODEL,
         temperature=LLM_TEMPERATURE,
         messages=[{"role": "user", "content": build_prompt(question, chunks)}],
     )
