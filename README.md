@@ -45,7 +45,10 @@ RAG/
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 copy .env.example .env      & :: 填入 DEEPSEEK_API_KEY
-.venv\Scripts\python.exe build_index.py
+set HF_ENDPOINT=https://hf-mirror.com   & :: 模型下载走镜像（已缓存可省略；直连 HF 超时会触发 transformers 离线 fallback 的 AutoProcessor 兼容坑）
+.venv\Scripts\python.exe build_index.py      & :: 语料 → chunks.jsonl（分块）
+.venv\Scripts\python.exe indexing.py         & :: 双索引构建与持久化（BM25 + FAISS）
+.venv\Scripts\python.exe evaluate.py         & :: 30 条标注 → Top-5 命中率三渠道报告
 .venv\Scripts\python.exe -m uvicorn server:app --reload   & :: GET /health
 ```
 
@@ -66,5 +69,5 @@ copy .env.example .env      & :: 填入 DEEPSEEK_API_KEY
 | --- | --- | --- |
 | W5 | FastAPI 脚手架 + 数据处理管道入口 | ✅ 2026-11-01（funNLP 语料 320 块，median 403 字符；5 单测过；/health 200） |
 | W6 | BM25 + BGE 双索引，FAISS 本地持久化 | ✅ 2026-11-01 提前完成（320×512 向量 9.26s，热启动 0.01s，9 单测过） |
-| W7 | 混合检索 + RRF + 30 条标注 + **Top-5 命中率数字** | ⬜ |
+| W7 | 混合检索 + RRF + 30 条标注 + **Top-5 命中率数字** | ✅ 2026-11-01（Hit Rate@5：BM25 80.0% / 向量 90.0% / **RRF 混合 93.3%**，30 条人工标注，逐条明细见 eval_report.md） |
 | W8 | FastAPI `/ask` 服务层收尾（超时砍 Docker 保 CLI） | ⬜ |
