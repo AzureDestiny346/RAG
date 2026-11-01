@@ -16,7 +16,6 @@ import time
 from pathlib import Path
 
 import faiss
-import jieba
 import numpy as np
 from rank_bm25 import BM25Okapi
 from sentence_transformers import SentenceTransformer
@@ -29,14 +28,9 @@ from config import (
     FAISS_PATH,
     INDEX_DIR,
     META_PATH,
-    QUERY_INSTRUCTION,
     ensure_dirs,
 )
-
-
-def tokenize(text: str) -> list[str]:
-    """中文检索分词：cut_for_search 对长词做细粒度切分，召回更友好。"""
-    return [t for t in jieba.cut_for_search(text) if t.strip()]
+from retrieval import Engine, dual_recall, tokenize
 
 
 def build_bm25(corpus: list[dict]) -> BM25Okapi:
@@ -48,13 +42,6 @@ def encode_passages(model: SentenceTransformer, texts: list[str]) -> np.ndarray:
     """文档向量：L2 归一化 + IndexFlatIP 内积 = 余弦相似度。"""
     return model.encode(
         texts, batch_size=64, normalize_embeddings=True, show_progress_bar=False,
-    ).astype("float32")
-
-
-def encode_query(model: SentenceTransformer, query: str) -> np.ndarray:
-    """查询向量：bge-zh 查询侧必须带检索指令前缀（文档侧不加）。"""
-    return model.encode(
-        [QUERY_INSTRUCTION + query], normalize_embeddings=True,
     ).astype("float32")
 
 
@@ -74,7 +61,7 @@ def persist(bm25: BM25Okapi, index: faiss.Index, metas: list[dict],
 
 def load(bm25_path: Path = BM25_PATH, faiss_path: Path = FAISS_PATH,
          meta_path: Path = META_PATH) -> tuple[BM25Okapi, faiss.Index, list[dict]]:
-    """热启动：从磁盘加载双索引与元数据（W7 retrieval 的入口）。"""
+    """热启动：从磁盘加载双索引与元数据（ask._engine 会补上模型组成 Engine）。"""
     for p in (bm25_path, faiss_path, meta_path):
         if not p.exists():
             raise FileNotFoundError(f"缺少 {p}，请先运行 python indexing.py")
@@ -86,23 +73,15 @@ def load(bm25_path: Path = BM25_PATH, faiss_path: Path = FAISS_PATH,
     return bm25, index, metas
 
 
-def smoke_query(model: SentenceTransformer, bm25: BM25Okapi, index: faiss.Index,
-                metas: list[dict], query: str) -> None:
-    """冒烟查询：两路各打 Top-3，人眼验证索引质量（RRF 融合在 W7）。"""
+def smoke_query(engine: Engine, query: str, top_k: int = 3) -> None:
+    """冒烟查询：两路各打 Top-K，人眼验证索引质量（融合逻辑在 retrieval）。"""
     print(f"\n[冒烟查询] {query}")
-    scores = bm25.get_scores(tokenize(query))
-    bm25_top = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:3]
-    print("BM25 Top-3:")
-    for rank, i in enumerate(bm25_top, 1):
-        m = metas[i]
-        print(f"  {rank}. [{m['source']}|{m['heading'][:40]}] {m['text'][:60]}...")
-
-    q = encode_query(model, query)
-    _, idx = index.search(q, 3)
-    print("向量 Top-3:")
-    for rank, i in enumerate(idx[0], 1):
-        m = metas[int(i)]
-        print(f"  {rank}. [{m['source']}|{m['heading'][:40]}] {m['text'][:60]}...")
+    bm25_ids, vec_ids = dual_recall(query, engine.bm25, engine.index, engine.model)
+    for label, ids in (("BM25", bm25_ids), ("向量", vec_ids)):
+        print(f"{label} Top-{top_k}:")
+        for rank, i in enumerate(ids[:top_k], 1):
+            m = engine.metas[i]
+            print(f"  {rank}. [{m['source']}|{m['heading'][:40]}] {m['text'][:60]}...")
 
 
 def main() -> int:
@@ -143,7 +122,7 @@ def main() -> int:
     print(f"冷启动合计（构建到持久化）: {time.perf_counter() - t0:.2f}s")
 
     if len(sys.argv) > 1:
-        smoke_query(model, bm25, index, corpus, sys.argv[1])
+        smoke_query(Engine(bm25, index, corpus, model), sys.argv[1])
     return 0
 
 

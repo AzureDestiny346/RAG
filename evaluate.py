@@ -12,9 +12,9 @@ from datetime import date
 
 from sentence_transformers import SentenceTransformer
 
-from config import BM25_TOP_K, EMBEDDING_MODEL, FINAL_TOP_K, QA_PATH, VECTOR_TOP_K
-from indexing import encode_query, load, tokenize
-from retrieval import is_hit, rrf_fuse
+from config import EMBEDDING_MODEL, FINAL_TOP_K, QA_PATH
+from indexing import load
+from retrieval import Engine, dual_recall, is_hit, rrf_fuse
 
 CHANNELS = (("bm25", "BM25-only"), ("vector", "向量-only"), ("rrf", "RRF 混合"))
 
@@ -36,24 +36,20 @@ def precheck(qa: list[dict], metas: list[dict]) -> None:
         print(f"[警告] 标注 id={ambi} 的 expected_heading 残留歧义（判定放宽）。")
 
 
-def evaluate(qa, bm25, index, metas, model) -> list[dict]:
+def evaluate(qa, engine) -> list[dict]:
     """逐条三渠道评测：BM25 / 向量 / RRF 各自 Top-5 做命中判定。"""
     rows = []
     for r in qa:
-        scores = bm25.get_scores(tokenize(r["question"]))
-        bm25_top = sorted(range(len(scores)),
-                          key=lambda i: scores[i], reverse=True)[:BM25_TOP_K]
-        qv = encode_query(model, r["question"])
-        _, vec_idx = index.search(qv, VECTOR_TOP_K)
-        vec_top = [int(i) for i in vec_idx[0] if i >= 0]
+        bm25_top, vec_top = dual_recall(r["question"], engine.bm25,
+                                        engine.index, engine.model)
         rrf_top = rrf_fuse(bm25_top, vec_top, top_k=FINAL_TOP_K)
         rows.append({
             "id": r["id"],
             "question": r["question"],
             "expected": r["expected_heading"],
-            "bm25": is_hit(r, bm25_top[:FINAL_TOP_K], metas),
-            "vector": is_hit(r, vec_top[:FINAL_TOP_K], metas),
-            "rrf": is_hit(r, rrf_top, metas),
+            "bm25": is_hit(r, bm25_top[:FINAL_TOP_K], engine.metas),
+            "vector": is_hit(r, vec_top[:FINAL_TOP_K], engine.metas),
+            "rrf": is_hit(r, rrf_top, engine.metas),
         })
     return rows
 
@@ -68,7 +64,7 @@ def main() -> int:
     bm25, index, metas = load()
     precheck(qa, metas)
     model = SentenceTransformer(EMBEDDING_MODEL)
-    rows = evaluate(qa, bm25, index, metas, model)
+    rows = evaluate(qa, Engine(bm25, index, metas, model))
     n = len(rows)
 
     print(f"\n==== Top-5 命中率（Hit Rate@5，{n} 条人工标注，{date.today().isoformat()}）====")

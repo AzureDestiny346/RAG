@@ -8,7 +8,8 @@ import pickle
 import faiss
 import numpy as np
 
-from indexing import build_bm25, tokenize
+from indexing import build_bm25
+from retrieval import tokenize
 
 
 def test_tokenize_chinese_deterministic():

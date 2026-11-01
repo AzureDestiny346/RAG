@@ -11,24 +11,23 @@ from functools import lru_cache
 from config import EMBEDDING_MODEL
 from generation import answer, make_client
 from indexing import load
-from retrieval import retrieve
+from retrieval import Engine, retrieve
 from sentence_transformers import SentenceTransformer
 
 
 @lru_cache(maxsize=1)
-def _engine():
+def _engine() -> Engine:
     """进程级缓存：模型与双索引只加载一次（CLI 与 HTTP 服务共用）。
 
     修复自 code-review 双轴发现：/ask 每请求重载 = 秒级延迟。
     """
     bm25, index, metas = load()
-    return bm25, index, metas, SentenceTransformer(EMBEDDING_MODEL)
+    return Engine(bm25, index, metas, SentenceTransformer(EMBEDDING_MODEL))
 
 
 def ask_pipeline(question: str) -> dict:
     """检索 -> 生成 -> 结构化结果（CLI 与 W8 HTTP 层共用的唯一入口）。"""
-    bm25, index, metas, model = _engine()
-    chunks = retrieve(question, bm25, index, metas, model)
+    chunks = retrieve(question, _engine())
     client = make_client()
     return {
         "question": question,

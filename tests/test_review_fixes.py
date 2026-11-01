@@ -56,7 +56,7 @@ def test_engine_loaded_once_across_pipelines(monkeypatch):
 
     monkeypatch.setattr(ask, "load", fake_load)
     monkeypatch.setattr(ask, "SentenceTransformer", FakeModel)
-    monkeypatch.setattr(ask, "retrieve", lambda q, b, i, m, mo: [])
+    monkeypatch.setattr(ask, "retrieve", lambda q, e: [])
     monkeypatch.setattr(ask, "make_client", lambda: object())
     monkeypatch.setattr(ask, "answer", lambda c, q, ch: "ok")
 
