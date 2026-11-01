@@ -1,0 +1,30 @@
+{"id": 1, "question": "想做中文分词，有哪些现成工具？", "expected_heading": "词库及词法工具"}
+{"id": 2, "question": "哪里能找到中文停用词表？", "expected_heading": "词库及词法工具"}
+{"id": 3, "question": "有没有开箱即用的命名实体识别工具？", "expected_heading": "词库及词法工具"}
+{"id": 4, "question": "想找中文开源语料库，去哪找？", "expected_heading": "语料库"}
+{"id": 5, "question": "中英平行语料（翻译对齐语料）哪里有？", "expected_heading": "语料库"}
+{"id": 6, "question": "医疗领域有没有公开的中文语料？", "expected_heading": "语料库"}
+{"id": 7, "question": "类 ChatGPT 的开源框架有哪些推荐？", "expected_heading": "类ChatGPT的开源框架"}
+{"id": 8, "question": "想本地部署一个开源大模型对话应用，用什么框架？", "expected_heading": "类ChatGPT的开源框架"}
+{"id": 9, "question": "做 LLM 应用编排有哪些开源项目？", "expected_heading": "类ChatGPT的开源框架"}
+{"id": 10, "question": "学习 ChatGPT 原理应该看哪些资料？", "expected_heading": "类ChatGPT的资料"}
+{"id": 11, "question": "大模型微调的教程汇总在哪？", "expected_heading": "类ChatGPT的资料"}
+{"id": 12, "question": "显存不够怎么训练大模型（低资源训练）？", "expected_heading": "LLM的训练_推理_低资源_高效训练"}
+{"id": 13, "question": "大模型推理加速有哪些方案？", "expected_heading": "LLM的训练_推理_低资源_高效训练"}
+{"id": 14, "question": "LoRA 这类参数高效微调的资料在哪？", "expected_heading": "LLM的训练_推理_低资源_高效训练"}
+{"id": 15, "question": "想入门知识图谱，有哪些资源？", "expected_heading": "知识图谱"}
+{"id": 16, "question": "知识图谱和大模型结合的项目有哪些？", "expected_heading": "知识图谱"}
+{"id": 17, "question": "中文 NLP 资源最全的导航是哪个？", "expected_heading": "NLP民工的乐园: 几乎最全的中文NLP资源库"}
+{"id": 18, "question": "做语音识别（ASR）有哪些开源工具？", "expected_heading": "语音处理"}
+{"id": 19, "question": "语音合成 TTS 的资源哪里找？", "expected_heading": "语音处理"}
+{"id": 20, "question": "BERT 这类预训练模型去哪下载？", "expected_heading": "预训练语言模型&大模型"}
+{"id": 21, "question": "中文大模型列表在哪维护？", "expected_heading": "预训练语言模型&大模型"}
+{"id": 22, "question": "搭建智能问答系统有什么参考？", "expected_heading": "智能问答"}
+{"id": 23, "question": "FAQ 问答对资源哪里有？", "expected_heading": "智能问答"}
+{"id": 24, "question": "事件抽取（EE）有哪些资源？", "expected_heading": "事件抽取"}
+{"id": 25, "question": "想学提示工程（Prompt Engineering），看哪部分？", "expected_heading": "提示工程"}
+{"id": 26, "question": "ChatGPT 在垂直行业的落地案例？", "expected_heading": "类ChatGPT的行业应用"}
+{"id": 27, "question": "多模态大模型（图文）有哪些开源项目？", "expected_heading": "多模态LLM"}
+{"id": 28, "question": "用 NLP 处理表格数据（Excel/CSV）有什么工具？", "expected_heading": "表格处理"}
+{"id": 29, "question": "NLP 面试题和课程资源在哪？", "expected_heading": "课程报告面试等"}
+{"id": 30, "question": "各家大模型的效果对比评测在哪看？", "expected_heading": "类ChatGPT的模型评测对比"}
