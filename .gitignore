@@ -3,6 +3,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+*.log
 
 # 敏感信息：.env 承载 API Key，绝不进仓库（简历 bullet 的承诺）
 .env
