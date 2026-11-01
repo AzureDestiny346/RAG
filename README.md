@@ -70,4 +70,4 @@ set HF_ENDPOINT=https://hf-mirror.com   & :: 模型下载走镜像（已缓存�
 | W5 | FastAPI 脚手架 + 数据处理管道入口 | ✅ 2026-11-01（funNLP 语料 320 块，median 403 字符；5 单测过；/health 200） |
 | W6 | BM25 + BGE 双索引，FAISS 本地持久化 | ✅ 2026-11-01 提前完成（320×512 向量 9.26s，热启动 0.01s，9 单测过） |
 | W7 | 混合检索 + RRF + 30 条标注 + **Top-5 命中率数字** | ✅ 2026-11-01（Hit Rate@5：BM25 80.0% / 向量 90.0% / **RRF 混合 93.3%**，30 条人工标注，逐条明细见 eval_report.md） |
-| W8 | FastAPI `/ask` 服务层收尾（超时砍 Docker 保 CLI） | ⬜ |
+| W8 | FastAPI `/ask` 服务层收尾（超时砍 Docker 保 CLI） | ✅ 2026-11-01（/health 与 /ask 实测 200；25 单测绿；双厂商配置自适应；简历 bullet 已回填真实数字） |
