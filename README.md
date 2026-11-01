@@ -1,7 +1,7 @@
 # RAG 学习项目
 
 以"小而实用"为目标的 RAG（检索增强生成）学习与搭建项目。
-W5-W8 建码时间盒 ≤20h：**数字优先于服务化，服务化优先于 Docker**。
+
 
 ## 📖 核心文档
 
@@ -9,15 +9,15 @@ W5-W8 建码时间盒 ≤20h：**数字优先于服务化，服务化优先于 D
 
 ## ⚙️ 技术栈定案（2026-11-01 建码确认）
 
-| 项 | 定案 | 备注 |
-| --- | --- | --- |
-| 语言 | Python 3.11+（本机 3.14.4） | 虚拟环境 `.venv` |
-| Embedding | BAAI/bge-small-zh-v1.5（本地） | 中文效果好、免费、约 100MB |
-| LLM | DeepSeek API（OpenAI 兼容） | Key 放 `.env`，不进仓库 |
-| 向量库 | **FAISS（本地持久化）** | 建码定案，替代原"numpy→Chroma"默认 |
-| 分块 | 标题感知优先，兜底 400/60 句界切分 | 手册第 3 章 |
-| 检索 | BM25 + 向量双路召回 → RRF 融合 → Top-5 | 手册第 6 章 |
-| 数据 | Markdown 起步 → PDF 第二阶段 | 元数据从第一天就记录 |
+| 项         | 定案                             | 备注                       |
+| --------- | ------------------------------ | ------------------------ |
+| 语言        | Python 3.11+（本机 3.14.4）        | 虚拟环境 `.venv`             |
+| Embedding | BAAI/bge-small-zh-v1.5（本地）     | 中文效果好、免费、约 100MB         |
+| LLM       | DeepSeek API（OpenAI 兼容）        | Key 放 `.env`，不进仓库        |
+| 向量库       | **FAISS（本地持久化）**               | 建码定案，替代原"numpy→Chroma"默认 |
+| 分块        | 标题感知优先，兜底 400/60 句界切分          | 手册第 3 章                  |
+| 检索        | BM25 + 向量双路召回 → RRF 融合 → Top-5 | 手册第 6 章                  |
+| 数据        | Markdown 起步 → PDF 第二阶段         | 元数据从第一天就记录               |
 
 ## 📁 项目结构
 
@@ -46,6 +46,7 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 copy .env.example .env      & :: 填入 DEEPSEEK_API_KEY
 set HF_ENDPOINT=https://hf-mirror.com   & :: 模型下载走镜像（已缓存可省略；直连 HF 超时会触发 transformers 离线 fallback 的 AutoProcessor 兼容坑）
+.venv\Scripts\python.exe tools\fetch_corpus.py   & :: 下载 funNLP 语料（约 138KB，正文不入仓库）
 .venv\Scripts\python.exe build_index.py      & :: 语料 → chunks.jsonl（分块）
 .venv\Scripts\python.exe indexing.py         & :: 双索引构建与持久化（BM25 + FAISS）
 .venv\Scripts\python.exe evaluate.py         & :: 30 条标注 → Top-5 命中率三渠道报告
@@ -54,20 +55,11 @@ set HF_ENDPOINT=https://hf-mirror.com   & :: 模型下载走镜像（已缓存�
 
 ## 📚 语料来源
 
-- [funNLP](https://github.com/fighting41love/funNLP) 的 README（中文 NLP 资源目录），已存入 `data/corpus/`。
-- 公开内容仅作本地学习与检索评测用途，版权归原作者；该仓库无明确开源许可证——**若本项目将来公开，语料正文应改为仅保留下载脚本与出处链接**。
+- [funNLP](https://github.com/fighting41love/funNLP) 的 README（中文 NLP 资源目录）——**正文不入仓库**（该仓库无明确开源许可证），克隆后运行 `python tools/fetch_corpus.py` 自取，存入 `data/corpus/`。
+- 仅作本地学习与检索评测用途，版权归原作者。
 
 ## 🗺️ 学习路径（三步走）
 
 1. **开窍（1 晚）**：[HF 博客手写极简 RAG](https://huggingface.co/blog/ngxson/make-your-own-rag)
 2. **系统学（1-2 周）**：[NirDiamant/RAG_Techniques](https://github.com/NirDiamant/RAG_Techniques)（只做 Foundational 分类）
 3. **深入原理（选做）**：[pguso/rag-from-scratch](https://github.com/pguso/rag-from-scratch)（全本地、Node.js）
-
-## ✅ 里程碑（W5-W8，时间盒 ≤20h）
-
-| 周 | 交付 | 状态 |
-| --- | --- | --- |
-| W5 | FastAPI 脚手架 + 数据处理管道入口 | ✅ 2026-11-01（funNLP 语料 320 块，median 403 字符；5 单测过；/health 200） |
-| W6 | BM25 + BGE 双索引，FAISS 本地持久化 | ✅ 2026-11-01 提前完成（320×512 向量 9.26s，热启动 0.01s，9 单测过） |
-| W7 | 混合检索 + RRF + 30 条标注 + **Top-5 命中率数字** | ✅ 2026-11-01（Hit Rate@5：BM25 80.0% / 向量 90.0% / **RRF 混合 93.3%**，30 条人工标注，逐条明细见 eval_report.md） |
-| W8 | FastAPI `/ask` 服务层收尾（超时砍 Docker 保 CLI） | ✅ 2026-11-01（/health 与 /ask 实测 200；25 单测绿；双厂商配置自适应；简历 bullet 已回填真实数字） |
