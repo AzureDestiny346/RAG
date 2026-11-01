@@ -42,23 +42,23 @@ RRF_K = 60          # RRF 常数，论文惯用值
 FINAL_TOP_K = 5     # 最终参与命中率判定 / 喂给 LLM 的条数
 
 # ---------- LLM（OpenAI 兼容协议，依赖倒置；支持 DeepSeek / DashScope 通义 / 任意兼容端点）----------
+# URL 只读当前选中厂商自己的环境变量，避免残留的别家端点劫持配置
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")
 
 if DEEPSEEK_API_KEY:
     LLM_API_KEY = DEEPSEEK_API_KEY
-    _DEFAULT_URL, _DEFAULT_MODEL = "https://api.deepseek.com", "deepseek-chat"
+    LLM_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 elif DASHSCOPE_API_KEY:
     LLM_API_KEY = DASHSCOPE_API_KEY
-    _DEFAULT_URL = os.getenv("DASHSCOPE_BASE_URL",
+    LLM_BASE_URL = os.getenv("DASHSCOPE_BASE_URL",
                              "https://dashscope.aliyuncs.com/compatible-mode/v1")
-    _DEFAULT_MODEL = "qwen-plus"
+    LLM_MODEL = os.getenv("LLM_MODEL", "qwen-plus")
 else:
     LLM_API_KEY = ""
-    _DEFAULT_URL, _DEFAULT_MODEL = "https://api.deepseek.com", "deepseek-chat"
-
-LLM_BASE_URL = os.getenv("DASHSCOPE_BASE_URL", _DEFAULT_URL)
-LLM_MODEL = os.getenv("LLM_MODEL", _DEFAULT_MODEL)
+    LLM_BASE_URL = "https://api.deepseek.com"
+    LLM_MODEL = "deepseek-chat"
 LLM_TEMPERATURE = 0.2
 MAX_CONTEXT_CHARS = 4000   # 上下文预算：按分数塞到预算为止，"给足但不给多"
 
