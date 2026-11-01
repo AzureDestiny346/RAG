@@ -7,7 +7,7 @@
 
 ## 0. 使用前必读：本手册的默认假设
 
-以下 5 个关键决策尚未与你确认，手册基于默认假设编写。**每个假设在对应章节都写了替换方案**——如果与你的实际情况不符，指出改哪章即可，不用重读全书：
+以下 5 个关键决策**已于 2026-11-01 建码定案**（向量库定案 FAISS 本地持久化，**以交接单为主**，详见 README 技术栈定案表与第 5 章；其余与本表一致）。**每个假设在对应章节都写了替换方案**——如果与你的实际情况不符，指出改哪章即可，不用重读全书：
 
 | 决策点    | 默认假设                                 | 替代方案                     |
 | ------ | ------------------------------------ | ------------------------ |
@@ -25,13 +25,13 @@ python -m venv .venv
 .venv\Scripts\activate
 
 # 2) 安装核心依赖
-pip install sentence-transformers chromadb openai pymupdf
+pip install sentence-transformers faiss-cpu rank-bm25 jieba openai pymupdf   # 本项目完整依赖以 requirements.txt 为准
 
 # 3) 国内下载 Hugging Face 模型：走 Clash 代理（127.0.0.1:7897），或直接用镜像
 set HF_ENDPOINT=https://hf-mirror.com
 ```
 
-**为什么用虚拟环境**：RAG 生态依赖版本耦合紧（transformers/torch/chromadb），全局安装迟早冲突；隔离后坏了删掉重建即可。
+**为什么用虚拟环境**：RAG 生态依赖版本耦合紧（transformers/torch/faiss），全局安装迟早冲突；隔离后坏了删掉重建即可。
 
 ### 0.2 如果你不用 Python
 
@@ -206,34 +206,36 @@ print((vecs[0] * vecs[2]).sum())   # ≈ 0.3  语义无关 → 向量远离
 
 向量检索 = 找"离查询向量最近的 K 个向量"。文档块一多，逐个算距离（暴力扫描）太慢；向量库用 **ANN（近似最近邻）索引**把毫秒级响应做到百万级向量规模。
 
-### 但起步阶段：暴力扫描就够了
+### 本项目定案：FAISS（2026-11-01 交接单定案）
 
-几千个块用 numpy 直接算点积也就毫秒级。**先把全链路概念跑通，再引入工具**——这是 KISS 原则，也避免一开始就陷入工具配置。选型按阶段推进：
+几千个块用 numpy 直接算点积也就毫秒级——先理解"暴力扫描"这个概念。本项目直接选 **FAISS**：`IndexFlatIP` 本质就是精确的内积暴力扫描（不搞 ANN 近似，KISS 不打折），额外白拿两样东西——**毫秒级性能**与 **write_index 本地持久化**（W6 交付物，也是简历 bullet 里"向量库"的载体）：
 
 | 方案         | 形态     | 何时用                           |
 | ---------- | ------ | ----------------------------- |
-| numpy 暴力扫描 | 无依赖    | **学习期**（< 1 万块）：概念最透明         |
-| FAISS      | 库      | 单机、追求性能，愿意自己写持久化胶水代码          |
-| **Chroma** | 嵌入式数据库 | **单机项目默认推荐**：自带持久化、元数据过滤、CRUD |
+| numpy 暴力扫描 | 无依赖    | 概念理解期（< 1 万块）：最透明，理解"暴力扫描"原理用，本项目不落地 |
+| **FAISS**  | 库      | **本项目定案（W6）**：单机性能好，write_index/load_index 本地持久化 |
+| Chroma     | 嵌入式数据库 | 备选：自带持久化/CRUD/元数据过滤；**坑**：默认 embedding 是英文的，中文必须自己传向量 |
 | PGVector   | PG 扩展  | 已有 PostgreSQL，想让向量数据和业务库共存    |
 | Milvus     | 分布式集群  | 亿级向量、多节点——现阶段用不到（YAGNI）       |
 
-### Chroma 最小用法
+### FAISS 最小用法
 
 ```python
-import chromadb
+import faiss
 
-client = chromadb.PersistentClient(path="./chroma_db")   # 数据落盘，重启不丢
-col = client.get_or_create_collection("docs")
+d = 512                                              # bge-small-zh-v1.5 输出维度
+index = faiss.IndexFlatIP(d)                         # 内积索引：向量已归一化 → 等价余弦相似度
+index.add(vecs.astype("float32"))                    # 批量入库（N × d 矩阵）
+faiss.write_index(index, "index/vector.faiss")       # 落盘持久化，重启不丢
 
-col.add(ids=["1"],
-        documents=["年假需提前 3 天申请"],
-        metadatas=[{"source": "hr.md"}])
-
-res = col.query(query_texts=["怎么休年假"], n_results=2)   # 检索 Top-2
+index = faiss.read_index("index/vector.faiss")       # 下次启动直接加载，无需重建
+D, I = index.search(q_vec.reshape(1, -1).astype("float32"), 2)   # Top-2：I[0] 为块下标
 ```
 
-**重要坑**：Chroma 的**默认 embedding 模型是英文的**（all-MiniLM），中文项目必须自己算好向量后通过 `embeddings=` 参数传入（或注册自定义 `embedding_function`），否则中文检索效果会很差且不易察觉。这是新手最隐蔽的坑之一。
+**三个坑**：
+1. FAISS 只认 **float32**——sentence-transformers 默认输出 float64，直接 `add` 会报错或精度异常；
+2. 查询向量与库内向量必须**同一模型 + 同一归一化**（第 4 章铁律在这里兑现）；
+3. `I` 返回的是**行号不是文本**——要拿元数据映射回块内容与来源，这正是第 2 章"从第一天就记录元数据"的回报时刻。
 
 ---
 
@@ -305,15 +307,17 @@ SYSTEM_PROMPT = """你是企业知识库助手。
 ```python
 def ask(question: str) -> str:
     query_vec = model.encode([question])[0]            # 1. 问题向量化
-    hits = col.query(query_embeddings=[query_vec.tolist()],
-                     n_results=5, where=None)          # 2. 向量库检索
-    context = "\n\n".join(hits["documents"][0])        # 3. 拼资料（带预算截断）
+    D, I = index.search(query_vec.reshape(1, -1).astype("float32"),
+                        5)                             # 2. FAISS 检索 Top-5
+    context = "\n\n".join(chunks[i] for i in I[0])     # 3. 拼资料（带预算截断）
     resp = llm.chat.completions.create(
         model="deepseek-chat", temperature=0.2,
         messages=[{"role": "system", "content": SYSTEM_PROMPT},
                   {"role": "user", "content": f"资料：\n{context}\n\n问题：{question}"}])
     return resp.choices[0].message.content             # 4. 返回答案
 ```
+
+> 注：`index` / `chunks` 为第 5 章入库产物；本项目 W7 在此基础上叠加 BM25 + RRF 混合检索（第 6 章），`ask()` 骨架不变。
 
 ---
 
@@ -375,7 +379,7 @@ def ask(question: str) -> str:
 
 ### 部署形态
 
-单机项目用 **docker-compose** 即可：一个应用容器 + 数据卷挂载 Chroma 目录（向量库数据持久化）。**不要上 K8s**——单机服务上 K8s 是纯负担。
+单机项目用 **docker-compose** 即可：一个应用容器 + 数据卷挂载 `index/` 目录（FAISS 索引持久化）。**不要上 K8s**——单机服务上 K8s 是纯负担。
 
 ### 两个必须养成的习惯
 
