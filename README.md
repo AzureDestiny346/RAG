@@ -65,6 +65,6 @@ copy .env.example .env      & :: 填入 DEEPSEEK_API_KEY
 | 周 | 交付 | 状态 |
 | --- | --- | --- |
 | W5 | FastAPI 脚手架 + 数据处理管道入口 | ✅ 2026-11-01（funNLP 语料 320 块，median 403 字符；5 单测过；/health 200） |
-| W6 | BM25 + BGE 双索引，FAISS 本地持久化 | ⬜ |
+| W6 | BM25 + BGE 双索引，FAISS 本地持久化 | ✅ 2026-11-01 提前完成（320×512 向量 9.26s，热启动 0.01s，9 单测过） |
 | W7 | 混合检索 + RRF + 30 条标注 + **Top-5 命中率数字** | ⬜ |
 | W8 | FastAPI `/ask` 服务层收尾（超时砍 Docker 保 CLI） | ⬜ |

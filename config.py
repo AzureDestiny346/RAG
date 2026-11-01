@@ -21,6 +21,11 @@ CHUNKS_PATH = BASE_DIR / "data" / "chunks.jsonl"   # 分块产物（W5 管道输
 INDEX_DIR = BASE_DIR / "index"                     # 索引产物目录（.gitignore 已排除）
 QA_PATH = BASE_DIR / "eval" / "qa_30.jsonl"        # 30 条人工标注（W7）
 
+# 索引产物三件套（W6，.gitignore 已排除，可随时重建）
+BM25_PATH = INDEX_DIR / "bm25.pkl"
+FAISS_PATH = INDEX_DIR / "vector.faiss"
+META_PATH = INDEX_DIR / "meta.jsonl"
+
 # ---------- 分块（手册第 3 章定案）----------
 CHUNK_SIZE = 400       # 兜底分块的目标长度（字符）
 CHUNK_OVERLAP = 60     # 相邻块重叠字符数
@@ -28,6 +33,7 @@ CHUNK_OVERLAP = 60     # 相邻块重叠字符数
 # ---------- Embedding（手册第 4 章定案）----------
 EMBEDDING_MODEL = "BAAI/bge-small-zh-v1.5"  # 本地模型，首跑自动下载约 100MB
 EMBEDDING_DIM = 512                          # 该模型输出维度
+QUERY_INSTRUCTION = "为这个句子生成表示以用于检索相关文章："  # bge-zh 查询侧前缀（模型卡要求，文档侧不加）
 
 # ---------- 检索（手册第 6 章定案：混合检索 + RRF）----------
 BM25_TOP_K = 20     # BM25 召回条数
