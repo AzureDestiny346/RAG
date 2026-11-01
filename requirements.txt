@@ -1,0 +1,18 @@
+# W5-W8 最小依赖集。先不锁版本：全链路跑通后用 pip freeze 生成锁定文件（W7 收尾动作）。
+# W5 脚手架
+fastapi
+uvicorn
+python-dotenv
+
+# W6 索引（BM25 中文分词 + BGE 向量 + FAISS 本地持久化）
+jieba
+rank-bm25
+faiss-cpu
+sentence-transformers
+
+# W7 生成层（OpenAI 兼容协议 = 依赖倒置的抽象层）
+openai
+
+# 测试（httpx 为 fastapi TestClient 依赖，W8 API 测试也要用）
+pytest
+httpx
