@@ -15,7 +15,6 @@ from sentence_transformers import SentenceTransformer
 
 from config import (
     BM25_TOP_K,
-    EMBEDDING_MODEL,
     FINAL_TOP_K,
     QUERY_INSTRUCTION,
     RRF_K,
